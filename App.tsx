@@ -41,10 +41,10 @@ const App: React.FC = () => {
       // Simulate an initial check immediately
       handleScan();
       
-      // Then check every 10 seconds
+      // Check every 30 seconds to avoid Rate Limiting (429)
       intervalId = setInterval(() => {
         handleScan();
-      }, 10000);
+      }, 30000);
     }
 
     return () => {

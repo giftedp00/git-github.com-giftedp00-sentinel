@@ -99,13 +99,18 @@ export const fetchSimulatedPosts = async (keywords: string[]): Promise<Alert[]> 
       }));
     }
 
-  } catch (error) {
+  } catch (error: any) {
+    // Graceful handling of Rate Limit errors to avoid crashing or attempting retries that will also fail.
+    if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+      console.warn("Gemini API Rate Limit hit. Switching to offline fallback mode to conserve quota.");
+      return generateFallbackData(keywords);
+    }
     console.warn("Search grounding failed or returned no results. Falling back to simulation.", error);
-    // Proceed to Strategy 2
+    // Proceed to Strategy 2 only if NOT rate limited
   }
 
   // STRATEGY 2: Synthetic Generation (Fallback)
-  // Used if search fails or finds nothing.
+  // Used if search fails or finds nothing (and not rate limited).
   return generateSyntheticPosts(ai, keywords);
 };
 
@@ -160,8 +165,12 @@ const generateSyntheticPosts = async (ai: GoogleGenAI, keywords: string[]): Prom
       },
       emailSent: false,
     }));
-  } catch (e) {
-    console.error("Synthetic generation failed", e);
+  } catch (error: any) {
+    if (error?.status === 429 || error?.message?.includes('429')) {
+      console.warn("Gemini API Rate Limit hit (Synthetic Strategy). Using offline data.");
+    } else {
+      console.error("Synthetic generation failed", error);
+    }
     return generateFallbackData(keywords);
   }
 };
@@ -176,7 +185,7 @@ const generateFallbackData = (keywords: string[]): Alert[] => {
     platform: platform,
     username: `user_${Math.floor(Math.random() * 9999)}`,
     timestamp: new Date().toISOString(),
-    content: `I've been feeling really ${keyword} lately. #vent`,
+    content: `I've been feeling really ${keyword} lately. #vent (Simulated - Offline Mode)`,
     keywordDetected: keyword,
     url: getPlatformSearchUrl(platform, keyword),
     metadata: {
