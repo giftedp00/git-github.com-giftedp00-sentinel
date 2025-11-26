@@ -1,0 +1,5 @@
+{
+  "name": " Sentinel: Keyword Monitor",
+  "description": "Real-time social media monitoring agent for specific keywords with automated email alert simulation.",
+  "requestFramePermissions": []
+}
